@@ -22,8 +22,8 @@ Each week has:
 
 **Exercises**
 
-* Implement a clean PyTorch training loop
-* Understand why stochastic gradient descent (SGD) is not Bayesian inference (and why we live with it)
+* Implement a clean PyTorch training loop using CIFAR-10 and/or ImageNet (we'll reuse this in Week 2). Try out a few different models — which? (TODO)
+* Understand why stochastic gradient descent (SGD) is not Bayesian inference (and why we live with it). (TODO)
 
 ## Week 2: Generalization, overfitting, and evaluation discipline
 
@@ -35,7 +35,10 @@ Each week has:
    * Stochastic gradient descent regularizes implicitly. Unclear how important this is is practice.
    * They have a neat way of finding the global optimum for small data sets (up o 100k images on a 24-core, 256GB workstation) by solving a linear system, which shows excellent generalization without any regularization (Equation 3, p. 9).
 * Recht et al. (2019), *Do ImageNet Classifiers Generalize to ImageNet?*
-   * TODO
+   * Test if models that do well on CIFAR-10 and ImageNet test data (i.e. generalize from training data) still do well on new data sets, created to mimic the data distributions of the originals.
+   * They all do worse (than on the original test set) but in a predictable way — the rank order remains the same.
+   * ![Results image from the Recht, et al. 2017 paper](../images/2025-12-17-recht-paper.png)
+   * Their motivated hypothesis is that this is mainly due to distributional shift between the original data set and the one they created, rather than poor generalization.
 
 **Background**
 
