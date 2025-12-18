@@ -1,6 +1,9 @@
 # 2025-12-17
 * Paper on generalization: Recht, et al. (2019). [Do ImageNet classifiers generalize to ImageNet?](https://arxiv.org/abs/1902.10811)
-   * 
+   * Test if models that do well on CIFAR-10 and ImageNet test data (i.e. generalize from training data) still do well on new data sets, created to mimic the data distributions of the originals.
+   * The all do worse (than on the original test set) but in a predictable way — the rank order remains the same.
+   * ![Results image from the Recht, et al. 2017 paper](2025-12-17-recht-paper.png)
+   * Their motivated hypothesis is that this is mainly due to distributional shift between the original data set and the one they created, rather than poor generalization.
 
 # 2025-12-16
 * [PyTorch "Learn the Basics" tutorial](https://docs.pytorch.org/tutorials/beginner/basics/intro.html)
