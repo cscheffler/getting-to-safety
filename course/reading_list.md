@@ -23,6 +23,7 @@ Each week has:
 **Exercises**
 
 * Implement a clean PyTorch training loop using CIFAR-10 and/or ImageNet (we'll reuse this in Week 2). Try out a few different models — which? (TODO)
+   * See [notebooks/2025-12-19-torch-training-loop.ipynb](../notebooks/2025-12-19-torch-training-loop.ipynb)
 * Understand why stochastic gradient descent (SGD) is not Bayesian inference (and why we live with it). (TODO)
 
 ## Week 2: Generalization, overfitting, and evaluation discipline
