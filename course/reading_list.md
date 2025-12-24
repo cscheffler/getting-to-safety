@@ -58,7 +58,13 @@ Each week has:
 **Primary**
 
 * Bengio et al. (2013), *Representation Learning: A Review and New Perspectives*
+   * Early, pre-deep-learning required extensive feature engineering to work well. A lot of the engineering work around that time was feature engineering.
+   * Deep networks are able to learn their own "represetations" (or features) directly.
+   * Lots of regularization and optimization improvements over a long period of time eventually made training deep networks directly feasible.
 * Alain & Bengio (2016), *Understanding Intermediate Layers Using Linear Probes*
+   * They attach a completely linear layer to different hidden layers in a deep net. The linear layer maps from the activations in the hidden layer to the number of classes being predicted.
+   * Some layers are really good at predicting the classes, which means the classes are linearly separable at that hidden layer.
+   * Some deep nets get monotonically better at linear separation as you go deeper into the layers.
 
 **Background**
 
