@@ -35,7 +35,7 @@ Each week has:
    * Explicit weight regularization accounts for a small amount of generalization but not nearly enough of it to offer a full explanation of generalization.
    * Stochastic gradient descent regularizes implicitly. Unclear how important this is is practice.
    * They have a neat way of finding the global optimum for small data sets (up o 100k images on a 24-core, 256GB workstation) by solving a linear system, which shows excellent generalization without any regularization (Equation 3, p. 9).
-* Recht et al. (2019), *Do ImageNet Classifiers Generalize to ImageNet?*
+* Recht et al. (2019), [Do ImageNet classifiers generalize to ImageNet?](https://arxiv.org/abs/1902.10811)
    * Test if models that do well on CIFAR-10 and ImageNet test data (i.e. generalize from training data) still do well on new data sets, created to mimic the data distributions of the originals.
    * They all do worse (than on the original test set) but in a predictable way — the rank order remains the same.
    * ![Results image from the Recht, et al. 2017 paper](../images/2025-12-17-recht-paper.png)
@@ -57,11 +57,11 @@ Each week has:
 
 **Primary**
 
-* Bengio et al. (2013), *Representation Learning: A Review and New Perspectives*
+* Bengio et al. (2013), [Representation learning: A review and new perspectives](https://arxiv.org/abs/1206.5538)
    * Early, pre-deep-learning required extensive feature engineering to work well. A lot of the engineering work around that time was feature engineering.
    * Deep networks are able to learn their own "represetations" (or features) directly.
    * Lots of regularization and optimization improvements over a long period of time eventually made training deep networks directly feasible.
-* Alain & Bengio (2016), *Understanding Intermediate Layers Using Linear Probes*
+* Alain & Bengio (2016), [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
    * They attach a completely linear layer to different hidden layers in a deep net. The linear layer maps from the activations in the hidden layer to the number of classes being predicted.
    * Some layers are really good at predicting the classes, which means the classes are linearly separable at that hidden layer.
    * Some deep nets get monotonically better at linear separation as you go deeper into the layers.
@@ -69,6 +69,7 @@ Each week has:
 **Background**
 
 * Raghu et al. (2017), *SVCCA*
+   * TODO
 
 **Applied outcome**
 
@@ -81,7 +82,7 @@ Each week has:
 
 **Primary**
 
-* Vaswani et al. (2017), *Attention Is All You Need*
+* Vaswani et al. (2017), [Attention is all you need](https://arxiv.org/abs/1706.03762)
 * Elhage et al. (2021), *A Mathematical Framework for Transformer Circuits* (sections 1–2)
 
 **Background**
