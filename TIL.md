@@ -1,19 +1,19 @@
 # 2026-01-09
-* [Experiment](../notebooks/2026-01-07-linear-separability-with-random-labels.ipynb): Does training on randomly labelled data lead to linear separability in the neural network?
+* [Experiment](notebooks/2026-01-07-linear-separability-with-random-labels.ipynb): Does training on randomly labelled data lead to linear separability in the neural network?
   * When we randomize the labels, the network can still perfectly fit the training data but, of course, it is impossible to generalise to the test data.
   * However, does the network still learn something useful? Does linear separability (on the real labels) still increase in the various layers of the network as it learns to memorize randomly labelled data?
   * Yes, but very slowly/weakly. I had to step back from full AlexNet not a smaller version of AlexNet to make this work at all (with 100 epochs of training). But there does seem to be signal, achieving a maximum separability accuracy around 50% in the second convolutional layer of the network.
   * New hypothesis: Using non-random but automatically labelled data (i.e. deterministically computed labels) would provide better signal-to-noise for learning representations and more separability.
-  * [As before](../notebooks/2026-01-07-train-and-compare-modified-alexnet.ipynb), the local response norm layers are always detrimental and should probably be removed. [A follow-up experiment](2026-01-09-linear-separability-with-random-labels-sans-local-response-norm.ipynb) shows that the modified network memorizes the training data in fewer than 50 epochs rather than 100, so ~2x faster. There is other weird behavior though. I don't fully understand this yet.
+  * [As before](notebooks/2026-01-07-train-and-compare-modified-alexnet.ipynb), the local response norm layers are always detrimental and should probably be removed. [A follow-up experiment](notebooks/2026-01-09-linear-separability-with-random-labels-sans-local-response-norm.ipynb) shows that the modified network memorizes the training data in fewer than 50 epochs rather than 100, so ~2x faster. There is other weird behavior though. I don't fully understand this yet.
 
 # 2026-01-07
-* [Reproduced](../notebooks/2025-12-26-reproduce-alain-2016-understanding.ipynb) linear probe results from Alain & Bengio. (2016). [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
+* [Reproduced](notebooks/2025-12-26-reproduce-alain-2016-understanding.ipynb) linear probe results from Alain & Bengio. (2016). [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
   * Learned how to modify the structure of an existing model — to attach, and then optimize the linear probe.
   * Learned that Kaggle provides 30 hours/week of free GPU/TPU compute. (You need phone and identify verification for access to GPUs/TPUs.)
   * Developed two follow-up hypotheses:
     * Dropping the local result normalization layers from AlexNet should improve results (see below for results)
     * Training on randomized labels should improve some layers but not all of them — probably improving earlier, convolutional layers but not later, fully connected layers. If true, this would be a good sign for unsupervised pre-training (since you can just attach random labels to unsupervised inputs).
-* [Experiment](../notebooks/2026-01-07-train-and-compare-modified-alexnet.ipynb): Does removing the local response normalization layers from AlexNet improve performance?
+* [Experiment](notebooks/2026-01-07-train-and-compare-modified-alexnet.ipynb): Does removing the local response normalization layers from AlexNet improve performance?
    * Accuracy improves significantly faster when removing the local response normalization layers, but ultimately, it still converges to the same accuracy as the original model.
    * The results are more complicated when using loss rather than accuracy as the metric.
      * Training loss is consistently better in the modified model.
@@ -21,12 +21,12 @@
      * If we ignore after how much training the minimum validation loss is achieved, the two models have approximately equal minimum validation loss.
 
 # 2025-12-26
-* [Started work on reproducing](../notebooks/2025-12-26-reproduce-alain-2016-understanding.ipynb) linear probe results from Alain & Bengio. (2016). [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
+* [Started work on reproducing](notebooks/2025-12-26-reproduce-alain-2016-understanding.ipynb) linear probe results from Alain & Bengio. (2016). [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
   * Created full AlexNet in PyTorch.
   * Learned how to save/load model state (weights/parameters).
 
 # 2025-12-24
-* [Reproduced](../notebooks/2025-12-21-reproduce-zhang-2017-understanding.ipynb) Figure 1 from Zhang, et al. (2017). [Understanding deep learning requires rethinking generalization](https://arxiv.org/abs/1611.03530).
+* [Reproduced](notebooks/2025-12-21-reproduce-zhang-2017-understanding.ipynb) Figure 1 from Zhang, et al. (2017). [Understanding deep learning requires rethinking generalization](https://arxiv.org/abs/1611.03530).
   * Learned how to create an MLP and a simplified AlexNet in PyTorch.
   * Learned how to run a training and validation loop in PyTorch.
 
@@ -46,7 +46,7 @@
 * Paper on generalization: Recht, et al. (2019). [Do ImageNet classifiers generalize to ImageNet?](https://arxiv.org/abs/1902.10811)
    * Test if models that do well on CIFAR-10 and ImageNet test data (i.e. generalize from training data) still do well on new data sets, created to mimic the data distributions of the originals.
    * They all do worse (than on the original test set) but in a predictable way — the rank order remains the same.
-   * ![Results image from the Recht, et al. 2017 paper](../images/2025-12-17-recht-paper.png)
+   * ![Results image from the Recht, et al. 2017 paper](images/2025-12-17-recht-paper.png)
    * Their motivated hypothesis is that this is mainly due to distributional shift between the original data set and the one they created, rather than poor generalization.
 
 # 2025-12-16

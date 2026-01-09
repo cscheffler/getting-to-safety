@@ -4,7 +4,7 @@ I'm developing a course on _AI Safety Research_ for undergraduates. This is a re
 
 Things to look at next:
 
-* [TIL](til/TIL.md): A log of things I learned, including runs of reproductions and small experiments.
+* [TIL](TIL.md): A log of things I learned, including runs of reproductions and small experiments.
 * [Annotated reading list](course/reading_list.md).
 * [Directory of Jupyter notebooks](notebooks/) with all exercises, experiments, and reproductions.
 
