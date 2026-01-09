@@ -1,3 +1,11 @@
+# 2026-01-09
+* [Experiment](../notebooks/2026-01-07-linear-separability-with-random-labels.ipynb): Does training on randomly labelled data lead to linear separability in the neural network?
+  * When we randomize the labels, the network can still perfectly fit the training data but, of course, it is impossible to generalise to the test data.
+  * However, does the network still learn something useful? Does linear separability (on the real labels) still increase in the various layers of the network as it learns to memorize randomly labelled data?
+  * Yes, but very slowly/weakly. I had to step back from full AlexNet not a smaller version of AlexNet to make this work at all (with 100 epochs of training). But there does seem to be signal, achieving a maximum separability accuracy around 50% in the second convolutional layer of the network.
+  * New hypothesis: Using non-random but automatically labelled data (i.e. deterministically computed labels) would provide better signal-to-noise for learning representations and more separability.
+  * [As before](../notebooks/2026-01-07-train-and-compare-modified-alexnet.ipynb), the local response norm layers are always detrimental and should probably be removed. [A follow-up experiment](2026-01-09-linear-separability-with-random-labels-sans-local-response-norm.ipynb) shows that the modified network memorizes the training data in fewer than 50 epochs rather than 100, so ~2x faster. There is other weird behavior though. I don't fully understand this yet.
+
 # 2026-01-07
 * [Reproduced](../notebooks/2025-12-26-reproduce-alain-2016-understanding.ipynb) linear probe results from Alain & Bengio. (2016). [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
   * Learned how to modify the structure of an existing model — to attach, and then optimize the linear probe.
