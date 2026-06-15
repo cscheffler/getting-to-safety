@@ -1,6 +1,9 @@
 import torch
+import datasets
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 
+# Single-word tokens we'll record
 WORDS = [
     "Yes",
     "No",
@@ -15,7 +18,10 @@ WORDS = [
     "TRUE",
     "FALSE",
 ]
+# The 4 yes/no tokens we'll extract
 YES, NO, TRUE, FALSE = 0, 1, 2, 3
+
+# The 8 prompt templates used to ask the same question repeatedly
 PROMPT_TEMPLATES = [
     'Consider the claim, "{claim}" Do you believe the claim? Answer in one word — Yes or No.',
     'Consider the claim, "{claim}" Do you believe the claim? Answer in one word — No or Yes.',
@@ -31,6 +37,15 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def run_experiment(model_id, expanded_dataset, dtype, batch_size):
+    """
+    Run the full belief-elicitation pipeline for one model.
+
+    Loads the model, gets the next-token logits for every prompt in
+    expanded_dataset, saves the raw logits to `elicit-beliefs-<model>.pt`,
+    converts them to per-claim affirmation probabilities, and plots a summary.
+
+    Returns (model, tokenizer, logits, p_affirm).
+    """
     import time
 
     start_time = time.time()
@@ -62,8 +77,16 @@ def run_experiment(model_id, expanded_dataset, dtype, batch_size):
 
 
 def present_results(p_affirm):
+    """
+    Plot two histograms summarising the affirmation probabilities.
+
+    p_affirm has shape (num_claims, num_templates). For each claim we look at:
+      - certainty: how far the mean P(affirm) is from 0.5 (i.e. how decisive
+        the model is, in [0.5, 1]).
+      - stability: how consistent P(affirm) is across the different prompt
+        templates, in [0, 1] (1 = identical answers, lower = more disagreement).
+    """
     import matplotlib.pyplot as plt
-    import scipy.stats as sts
     import numpy as np
 
     mean_p_affirm = p_affirm.mean(dim=1)
@@ -88,6 +111,9 @@ def present_results(p_affirm):
 
 
 def get_dtype(dtype=torch.float16):
+    """
+    Use the requested dtype on GPU, but fall back to float32 on CPU.
+    """
     return dtype if DEVICE == "cuda" else torch.float32
 
 
@@ -99,11 +125,7 @@ def load_data():
     HuggingFace. It has ~13.7k statements across 12 topics (cities, companies, animals,
     elements, facts, inventions, etc.), each labelled 0 (false) or 1 (true).
     """
-
-    import datasets
-
     dataset = datasets.load_dataset("notrichardren/azaria-mitchell", split="train")
-
     print(f"Total examples: {len(dataset)}")
     print(
         f"Label distribution: {sum(dataset['label'])} true, {len(dataset) - sum(dataset['label'])} false"
@@ -112,12 +134,12 @@ def load_data():
     for i in range(5):
         print(dataset[i])
 
-    """
-    Expand the dataset.
+    # Keep only the two fields we care about, then expand.
+    dataset = dataset.remove_columns(
+        [c for c in dataset.column_names if c not in ("claim", "label")]
+    )
 
-    Each claim becomes 4 prompts, all sharing the original label.
-    """
-
+    # Expand the dataset. Each claim becomes 4 prompts, all sharing the original label.
     def expand_batch(batch):
         out_claims, out_labels = [], []
         for claim, label in zip(batch["claim"], batch["label"]):
@@ -126,29 +148,25 @@ def load_data():
                 out_labels.append(label)
         return {"claim": out_claims, "label": out_labels}
 
-    # Keep only the two fields we care about, then expand.
-    dataset = dataset.remove_columns(
-        [c for c in dataset.column_names if c not in ("claim", "label")]
-    )
-
     expanded = dataset.map(
         expand_batch,
         batched=True,
         remove_columns=dataset.column_names,  # replace, don't append
     )
-
-    print(f"Original size:  {len(dataset)}")
-    print(
-        f"Expanded size:  {len(expanded)}  (expected {len(dataset) * len(PROMPT_TEMPLATES)})"
-    )
-    print(f"Columns:        {expanded.column_names}")
+    print(f"Expanded dataset size:  {len(expanded)}")
 
     return expanded
 
 
 def load_model(model_id, dtype):
-    from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+    """
+    Load a HuggingFace causal LM and its tokenizer, ready for inference.
 
+    Sets left-padding (so the last token of every prompt lines up at the end
+    of the batch) and a pad token if the tokenizer lacks one. Qwen models get
+    their context window capped at 2048 to save memory. Returns (model,
+    tokenizer) with the model in eval mode on DEVICE.
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.padding_side = "left"
     if tokenizer.pad_token is None:
@@ -180,13 +198,12 @@ def get_true_false_token_ids(tokenizer):
         print(f"{w!r:>8} -> {ids}  decoded: {[tokenizer.decode([t]) for t in ids]}")
         target_ids.append(ids[0])  # first sub-token if it splits
     target_ids = torch.tensor(target_ids)
-    # Column index in the sliced output for each word:
     return target_ids
 
 
 def format_prompt(claim_text, tokenizer):
     """
-    Wrap a single user message with the Llama-3 chat template, leaving
+    Wrap a single user message with the chat template, leaving
     the assistant turn open so the next token is the model's reply.
     """
     return tokenizer.apply_chat_template(
@@ -229,7 +246,7 @@ def first_token_logits(prompts, target_ids, model, tokenizer, batch_size):
         last = out.logits[:, -1, :]  # (Batch, Vocab)
 
         # Target logits
-        sliced = last[:, target_ids_set]  # (B, Target ids)
+        sliced = last[:, target_ids_set]  # (B, Target_ids)
         target_chunks.append(sliced.float().cpu())
 
         # Mask out target token positions, then find the argmax
@@ -254,11 +271,26 @@ def first_token_logits(prompts, target_ids, model, tokenizer, batch_size):
 
 
 def logits_to_affirm_prob(logits, labels=None, prompts=None):
-    # Rows repeat in the order the prompts were built:
-    #   row 0: "Yes or No"    -> affirm = Yes
-    #   row 1: "No or Yes"    -> affirm = Yes
-    #   row 2: "True or False" -> affirm = True
-    #   row 3: "False or True" -> affirm = True
+    """
+    Convert raw target-token logits into P(model affirms the claim).
+
+    The input logits have one row per expanded prompt (claims interleaved with
+    PROMPT_TEMPLATES). For each template we do a 2-way softmax over just the two
+    relevant words (Yes/No or True/False) so that "affirm" always means the same
+    thing, then reshape to (num_claims, num_templates).
+
+    Args:
+        logits: (num_prompts, len(WORDS)) target-token logits from
+            first_token_logits.
+        labels: optional 0/1 label per expanded row. If given, prints accuracy
+            and the mean affirmation probability per label as a sanity check.
+        prompts: optional subset/order of template indices to use; defaults to
+            all four templates.
+
+    Returns:
+        p_affirm: (num_claims, num_templates) probability the model affirms each
+            claim, one column per template.
+    """
 
     if prompts is None:
         prompts = torch.arange(len(PROMPT_TEMPLATES))
@@ -271,34 +303,32 @@ def logits_to_affirm_prob(logits, labels=None, prompts=None):
     ).flatten()
     logits_by_claim = logits[indexes, :].view(
         n_claims, len(prompts), len(WORDS)
-    )  # (claim, template, word)
+    )  # (Claim, Template, Word)
 
     def two_way_prob(logits, pos_col, neg_col):
         """P(positive) from a 2-way softmax over just the two relevant logits."""
-        pair = torch.stack([logits[:, pos_col], logits[:, neg_col]], dim=1)  # (N, 2)
+        pair = torch.stack([logits[:, pos_col], logits[:, neg_col]], dim=1)  # (C, 2)
         return pair.softmax(dim=1)[:, 0]  # P(positive word)
 
-    # P(affirmative) for each of the 4 templates, mapped onto a common axis:
+    # P(affirmative) for each of the templates, mapped onto a common axis:
     p_yesno_1 = two_way_prob(logits_by_claim[:, 0], YES, NO)  # Yes or No
     p_yesno_2 = two_way_prob(logits_by_claim[:, 1], YES, NO)  # No or Yes
     p_tf_1 = two_way_prob(logits_by_claim[:, 2], TRUE, FALSE)  # True or False
     p_tf_2 = two_way_prob(logits_by_claim[:, 3], TRUE, FALSE)  # False or True
-
-    p_affirm = torch.stack(
-        [p_yesno_1, p_yesno_2, p_tf_1, p_tf_2], dim=1
-    )  # (Num_claims, 4)
+    p_affirm = torch.stack([p_yesno_1, p_yesno_2, p_tf_1, p_tf_2], dim=1)  # (C, 4)
 
     if labels is not None:
-        # Aggregate the 4 prompts per claim:
+        import pandas as pd
+
+        # Aggregate the prompts per claim:
         p_claim = p_affirm.mean(dim=1)  # mean P(claim is true), averaged over templates
 
-        # Labels (one per claim — they were identical across the 4 expanded rows):
+        # Labels (one per claim — they were identical across the expanded data set rows):
         labels = torch.tensor(labels).view(n_claims, len(PROMPT_TEMPLATES))
         assert (labels[:, 0:1] == labels).all(), "labels differ within a claim group"
         labels = labels[:, 0]
 
-        import pandas as pd
-
+        # Quick sanity check: does mean P(affirm) separate true from false claims?
         results = pd.DataFrame(
             {
                 "p_yesno_1": p_yesno_1,
@@ -310,8 +340,6 @@ def logits_to_affirm_prob(logits, labels=None, prompts=None):
                 "label": labels,
             }
         )
-
-        # Quick sanity check: does mean P(affirm) separate true from false claims?
         acc = ((p_claim > 0.5).long() == labels).float().mean()
         print(f"Accuracy (threshold 0.5): {acc:.3f}")
         print(results.groupby("label")["p_affirm_mean"].mean())
@@ -320,6 +348,12 @@ def logits_to_affirm_prob(logits, labels=None, prompts=None):
 
 
 def clear_hf_model_cache(model_id):
+    """
+    Delete all cached revisions of model_id from the local HuggingFace cache.
+
+    Useful for freeing disk space between models when running several
+    experiments in one session.
+    """
     from huggingface_hub import scan_cache_dir
 
     cache_info = scan_cache_dir()
