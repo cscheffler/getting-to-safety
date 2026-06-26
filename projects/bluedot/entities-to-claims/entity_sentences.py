@@ -183,30 +183,30 @@ def get_claims(text, entities, api, max_attempts=3):
                 raise AttemptFailed
 
             if len(response) != len(entities):
-                sys.stderr.write(
-                    f"Mismatch between response list length ({len(response)}) and entities list length ({len(entities)}).\n"
-                )
                 print(prompt)
                 print(entities)
                 print(response)
                 raise AttemptFailed
+                sys.stderr.write(
+                    f"Mismatch between response list length ({len(response)}) and entities list length ({len(entities)}).\n"
+                )
             for i in range(len(response)):
                 if response[i]["index"] != i + 1:
+                    print(prompt)
+                    print(entities)
+                    print(response)
                     sys.stderr.write(
                         f"WARNING: Mismatch between index at index {i}, {response[i]['index']} ≠ {i+1}.\n"
                     )
-                    print(prompt)
-                    print(entities)
-                    print(response)
                     # raise AttemptFailed  # Downgraded to a warning
             for i in range(len(response)):
                 if response[i]["entity"] != entities[i]["span"]:
-                    sys.stderr.write(
-                        f"Mismatch between entity text at index {i}, {response[i]['entity']} ≠ {entities[i]['span']}.\n"
-                    )
                     print(prompt)
                     print(entities)
                     print(response)
+                    sys.stderr.write(
+                        f"Mismatch between entity text at index {i}, {response[i]['entity']} ≠ {entities[i]['span']}.\n"
+                    )
                     raise AttemptFailed
         except AttemptFailed:
             if attempt + 1 < max_attempts:
