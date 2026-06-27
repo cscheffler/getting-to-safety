@@ -128,7 +128,10 @@ if __name__ == "__main__":
                 new_dataset.append(new_row)
 
         else:
-            with open(os.path.join(cfg.hf_repo_local, "_claims.jsonl"), "rt") as fp:
+            claims_path = os.path.join(
+                cfg.hf_repo_local, cfg.subset or "", f"{cfg.split}_claims.jsonl"
+            )
+            with open(claims_path, "rt") as fp:
                 claims = [json.loads(line.strip()) for line in fp]
 
             # Construct rows for new data set
@@ -172,9 +175,9 @@ if __name__ == "__main__":
 
     print(len(new_dataset))
     new_dataset = Dataset.from_list(new_dataset)
-    print("Not pushing live data set")
-    """
+    # print("Not pushing live data set")
+    # """
     new_dataset.push_to_hub(
         destination_hf_repo, config_name=model_id, split=split, private=True
     )
-    """
+    # """

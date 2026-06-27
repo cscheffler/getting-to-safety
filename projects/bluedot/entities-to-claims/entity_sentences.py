@@ -267,8 +267,11 @@ if __name__ == "__main__":
             dataset = load_dataset(cfg.hf_repo, split=cfg.split)
         datasets.append(dataset)
 
+        claims_path = os.path.join(
+            cfg.hf_repo, cfg.subset or "", f"{cfg.split}_claims.jsonl"
+        )
         try:
-            fp = open(os.path.join(cfg.hf_repo, "_claims.jsonl"), "rt")
+            fp = open(claims_path, "rt")
         except FileNotFoundError:
             claims = []  # [{'claims': [{'span': '', 'claim': ''}]}]
         else:
@@ -312,7 +315,9 @@ if __name__ == "__main__":
             cfg.hf_repo,
         )
 
-        jsonl_path = os.path.join(cfg.hf_repo, "_claims.jsonl")
+        claims_path = os.path.join(
+            cfg.hf_repo, cfg.subset or "", f"{cfg.split}_claims.jsonl"
+        )
 
         if len(rows_to_redo[cfg.hf_repo]) > 0:
             for datum_index in rows_to_redo[cfg.hf_repo]:
@@ -321,7 +326,7 @@ if __name__ == "__main__":
                 print("Redid row", datum_index)
                 new_rows_completed += 1
 
-            with open(jsonl_path, "wt") as fp:
+            with open(claims_path, "wt") as fp:
                 for c in claims:
                     fp.write(json.dumps(c))
                     fp.write("\n")
@@ -329,7 +334,7 @@ if __name__ == "__main__":
         for datum_index in range(len(claims), len(dataset)):
             new_claims = get_claims_for_datum(dataset[datum_index], api)
             claims.append(new_claims)
-            with open(jsonl_path, "at") as fp:
+            with open(claims_path, "at") as fp:
                 fp.write(json.dumps(new_claims))
                 fp.write("\n")
 
