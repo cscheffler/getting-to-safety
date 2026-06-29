@@ -33,61 +33,41 @@ config_defaults = {
     "max_num_samples": None,
 }
 
-train_dataset_config = [
+dataset_configs = [
     {
-        "dataset_id": "llama3_1_8b_longfact_train",
         "hf_repo": "./longfact-annotations/",  # "obalcells/longfact-annotations",
         "subset": "Meta-Llama-3.1-8B-Instruct",
         "split": "train",
-        "max_length": 1536,
-        "default_ignore": False,
-        "last_span_token": False,
-        "ignore_buffer": 0,
-        "pos_weight": 10.0,
-        "neg_weight": 10.0,
-        "shuffle": True,
-        "seed": 42,
-        "process_on_the_fly": False,
     },
     {
-        "dataset_id": "llama3_1_8b_longfact_augmented_train",
         "hf_repo": "./longfact-augmented-annotations",  # "obalcells/longfact-augmented-annotations",
         "subset": "Meta-Llama-3.1-8B-Instruct",
         "split": "train",
-        "max_length": 1536,
-        "default_ignore": False,
-        "last_span_token": False,
-        "ignore_buffer": 0,
-        "pos_weight": 10.0,
-        "neg_weight": 10.0,
-        "shuffle": True,
-        "seed": 42,
-        "process_on_the_fly": False,
     },
-]
-"""
-    # No annotations found in data. Why is that? What did they use instead?
-    # The whole question is considered one entity. So I can feed these claims directly into the target model to ask what its belief is.
     {
-        "dataset_id": "llama3_1_8b_trivia_qa_train",
-        "hf_repo": "./triviaqa-balanced",
+        "hf_repo": "./longfact-annotations/",  # "obalcells/longfact-annotations",
         "subset": "Meta-Llama-3.1-8B-Instruct",
-        "split": "train",
-        "max_length": 1536,
-        "default_ignore": True,
-        "last_span_token": False,
-        "ignore_buffer": 0,
-        "pos_weight": 10.0,
-        "neg_weight": 10.0,
-        "shuffle": True,
-        "seed": 42,
-        "process_on_the_fly": False,
+        "split": "test",
+    },
+    {
+        "hf_repo": "./longfact-augmented-annotations",  # "obalcells/longfact-augmented-annotations",
+        "subset": "Meta-Llama-3.1-8B-Instruct",
+        "split": "test",
+    },
+    {
+        "hf_repo": "./longfact-annotations/",  # "obalcells/longfact-annotations",
+        "subset": "Meta-Llama-3.1-8B-Instruct",
+        "split": "validation",
+    },
+    {
+        "hf_repo": "./longfact-augmented-annotations",  # "obalcells/longfact-augmented-annotations",
+        "subset": "Meta-Llama-3.1-8B-Instruct",
+        "split": "validation",
     },
 ]
-"""
 
 configs = []
-for i, entry in enumerate(train_dataset_config):
+for i, entry in enumerate(dataset_configs):
     cfg = SimpleNamespace(**dict(config_defaults, **entry))
     configs.append(cfg)
 
@@ -182,6 +162,19 @@ def get_claims(text, entities, api, max_attempts=3):
                 )
                 raise AttemptFailed
 
+            if False:  # DEBUG
+                print(len(response) == len(entities))
+                _ = [response[i]["index"] == i + 1 for i in range(len(response))]
+                print(all(_), _)
+                _ = [
+                    response[i]["entity"] == entities[i]["span"]
+                    for i in range(len(response))
+                ]
+                print(all(_), _)
+                import pdb
+
+                pdb.set_trace()
+
             if len(response) != len(entities):
                 print(prompt)
                 print(entities)
@@ -250,8 +243,7 @@ if __name__ == "__main__":
         api_name = sys.argv[index + 1]
         assert api_name in available_apis
 
-    max_rows_to_complete = 1000
-    print(f"Using API {api_name} up to a maximum of {max_rows_to_complete} data rows")
+    print(f"Using API {api_name}.")
 
     # Set the Anthropic API key if and only if we're not using the CLI
     if api_name == "claude":
@@ -294,7 +286,6 @@ if __name__ == "__main__":
         "codex-cli": CodexCliClaimApi,
     }[api_name]()
 
-    new_rows_completed = 0
     for dataset_index, dataset in enumerate(datasets):
         cfg = configs[dataset_index]
         claims = dataset_claims[dataset_index]
@@ -324,7 +315,6 @@ if __name__ == "__main__":
                 new_claims = get_claims_for_datum(dataset[datum_index], api)
                 claims[datum_index] = new_claims
                 print("Redid row", datum_index)
-                new_rows_completed += 1
 
             with open(claims_path, "wt") as fp:
                 for c in claims:
@@ -347,8 +337,3 @@ if __name__ == "__main__":
                 "prompts for dataset",
                 cfg.hf_repo,
             )
-            new_rows_completed += 1
-            if new_rows_completed >= max_rows_to_complete:
-                break
-        if new_rows_completed >= max_rows_to_complete:
-            break
